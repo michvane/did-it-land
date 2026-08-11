@@ -53,7 +53,6 @@ export function VerificationForm({ initialSignature, initialCluster, loading, on
             placeholder="Transaction signature or explorer URL"
             autoComplete="off"
             spellCheck={false}
-            autoFocus
           />
           <button className="paste-button" type="button" onClick={paste}>Paste</button>
         </div>
