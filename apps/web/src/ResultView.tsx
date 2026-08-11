@@ -4,9 +4,55 @@ import { useState } from "react";
 import { createSupportSummary, type TransactionAnalysis } from "@did-it-land/analysis";
 import { formatDate, formatFee, shortAddress, titleCase } from "./format";
 
+const INITIAL_MOVEMENT_COUNT = 5;
+
+function MovementList({ analysis }: { analysis: TransactionAnalysis }) {
+  const [showAll, setShowAll] = useState(false);
+  const rows = [
+    ...analysis.nativeTransfers.map((transfer) => ({
+      key: `sol-${transfer.source}-${transfer.destination}-${transfer.lamports}`,
+      asset: "SOL",
+      title: "SOL",
+      route: `${shortAddress(transfer.source)} → ${shortAddress(transfer.destination)}`,
+      amount: transfer.amount,
+    })),
+    ...analysis.tokenTransfers.map((transfer) => ({
+      key: `token-${transfer.sourceTokenAccount}-${transfer.destinationTokenAccount}-${transfer.rawAmount}`,
+      asset: "Token",
+      title: transfer.mint ?? "Unknown token mint",
+      route: `${shortAddress(transfer.sourceOwner ?? transfer.sourceTokenAccount)} → ${shortAddress(transfer.destinationOwner ?? transfer.destinationTokenAccount)}`,
+      amount: transfer.amount ?? transfer.rawAmount,
+    })),
+  ];
+  const visibleRows = showAll ? rows : rows.slice(0, INITIAL_MOVEMENT_COUNT);
+  const remaining = rows.length - INITIAL_MOVEMENT_COUNT;
+  const failed = analysis.state === "failed";
+
+  return (
+    <div className="movements">
+      <div className="section-title">
+        <h3>{failed ? "Attempted movements" : "Movements"}</h3>
+        <span>{failed ? `${rows.length} · rolled back` : rows.length}</span>
+      </div>
+      {visibleRows.map((row) => (
+        <div className="movement" key={row.key}>
+          <span title={row.title}>{row.asset}</span>
+          <code>{row.route}</code>
+          <strong>{row.amount}</strong>
+        </div>
+      ))}
+      {rows.length === 0 && <p className="empty">No standard transfers decoded.</p>}
+      {remaining > 0 && (
+        <button className="show-more" type="button" onClick={() => setShowAll((value) => !value)}>
+          {showAll ? "Show less" : `Show ${remaining} more`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function ResultView({ analysis }: { analysis: TransactionAnalysis }) {
   const [copied, setCopied] = useState(false);
-  const transferCount = analysis.nativeTransfers.length + analysis.tokenTransfers.length;
   const tone = analysis.state === "failed" || analysis.expectation.overall === "mismatched"
     ? "bad"
     : analysis.state === "not_found" ? "neutral" : "good";
@@ -35,9 +81,28 @@ export function ResultView({ analysis }: { analysis: TransactionAnalysis }) {
 
       <dl className="facts">
         <div><dt>Status</dt><dd>{titleCase(analysis.state)}</dd></div>
-        <div><dt>Fee</dt><dd>{formatFee(analysis.feeLamports)}</dd></div>
+        <div><dt>{analysis.state === "failed" ? "Fee charged" : "Network fee"}</dt><dd>{formatFee(analysis.feeLamports)}</dd></div>
         <div><dt>Time</dt><dd>{formatDate(analysis.blockTime)}</dd></div>
       </dl>
+
+      {analysis.failure && (
+        <div className="failure-panel">
+          <div className="section-title"><h3>Why it failed</h3><span>On-chain evidence</span></div>
+          <dl className="failure-facts">
+            <div><dt>Reason</dt><dd>{analysis.failure.errorLabel}</dd></div>
+            {analysis.failure.instructionIndex !== undefined && (
+              <div><dt>Instruction</dt><dd>{analysis.failure.instructionIndex + 1}</dd></div>
+            )}
+            {analysis.failure.programId && (
+              <div>
+                <dt>Program</dt>
+                <dd><a href={`https://explorer.solana.com/address/${analysis.failure.programId}${query}`} target="_blank" rel="noreferrer"><code>{shortAddress(analysis.failure.programId, 8, 8)}</code> ↗</a></dd>
+              </div>
+            )}
+          </dl>
+          <p>No funds or program state changes from the attempted instructions were committed.</p>
+        </div>
+      )}
 
       {analysis.expectation.overall !== "not_checked" && (
         <div className="intent">
@@ -53,24 +118,7 @@ export function ResultView({ analysis }: { analysis: TransactionAnalysis }) {
         </div>
       )}
 
-      <div className="movements">
-        <div className="section-title"><h3>Movements</h3><span>{transferCount}</span></div>
-        {analysis.nativeTransfers.map((transfer, index) => (
-          <div className="movement" key={`${transfer.source}-${index}`}>
-            <span>SOL</span>
-            <code>{shortAddress(transfer.source)} → {shortAddress(transfer.destination)}</code>
-            <strong>{transfer.amount}</strong>
-          </div>
-        ))}
-        {analysis.tokenTransfers.map((transfer, index) => (
-          <div className="movement" key={`${transfer.sourceTokenAccount}-${index}`}>
-            <span>Token</span>
-            <code>{shortAddress(transfer.sourceOwner ?? transfer.sourceTokenAccount)} → {shortAddress(transfer.destinationOwner ?? transfer.destinationTokenAccount)}</code>
-            <strong>{transfer.amount ?? transfer.rawAmount}</strong>
-          </div>
-        ))}
-        {transferCount === 0 && <p className="empty">No standard transfers decoded.</p>}
-      </div>
+      <MovementList key={analysis.signature} analysis={analysis} />
 
       <p className="next-step"><strong>Next:</strong> {analysis.diagnosis.nextStep}</p>
 

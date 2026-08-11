@@ -25,6 +25,7 @@ export default function App({ initialSignature, initialCluster }: AppProps) {
       const params = new URLSearchParams({ signature: result.signature });
       if (result.cluster !== "mainnet-beta") params.set("cluster", result.cluster);
       window.history.replaceState(null, "", `/?${params.toString()}`);
+      window.setTimeout(() => document.getElementById("result")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     } catch (caught) {
       setAnalysis(null);
       setError(caught instanceof Error ? caught.message : "Verification failed.");
@@ -55,7 +56,7 @@ export default function App({ initialSignature, initialCluster }: AppProps) {
         />
 
         {error && <p className="error" role="alert">{error}</p>}
-        {analysis && <ResultView analysis={analysis} />}
+        {analysis && <div id="result"><ResultView analysis={analysis} /></div>}
       </main>
 
       <footer className="footer">

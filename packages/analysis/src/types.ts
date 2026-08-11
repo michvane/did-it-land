@@ -86,6 +86,14 @@ export interface Diagnosis {
   nextStep: string;
 }
 
+export interface FailureDetails {
+  instructionIndex?: number;
+  programId?: string;
+  errorCode?: string;
+  errorLabel: string;
+  changesRolledBack: true;
+}
+
 export interface TransactionAnalysis {
   signature: string;
   cluster: SolanaCluster;
@@ -101,6 +109,7 @@ export interface TransactionAnalysis {
   tokenBalanceChanges: TokenBalanceChange[];
   expectation: ExpectationResult;
   diagnosis: Diagnosis;
+  failure?: FailureDetails;
   rawError?: unknown;
   logs: string[];
   limitations: string[];

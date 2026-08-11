@@ -52,6 +52,16 @@ function successfulTransfer(): ParsedTransactionWithMeta {
   } as unknown as ParsedTransactionWithMeta;
 }
 
+function failedCustomTransfer(): ParsedTransactionWithMeta {
+  const transaction = successfulTransfer();
+  if (!transaction.meta) throw new Error("Test transaction metadata is missing.");
+  transaction.meta.err = { InstructionError: [0, { Custom: 6016 }] } as never;
+  transaction.meta.logMessages = [
+    "Program 11111111111111111111111111111111 failed: custom program error: 0x1780",
+  ];
+  return transaction;
+}
+
 const finalizedStatus: SignatureStatus = {
   confirmationStatus: "finalized",
   confirmations: null,
@@ -115,5 +125,27 @@ describe("transaction interpretation", () => {
     expect(result.state).toBe("succeeded");
     expect(result.expectation.recipient.state).toBe("mismatched");
     expect(result.diagnosis.code).toBe("EXPECTATION_MISMATCH");
+  });
+
+  it("describes a custom program failure without treating attempted transfers as completed", () => {
+    const status = { ...finalizedStatus, err: { InstructionError: [0, { Custom: 6016 }] } } as SignatureStatus;
+    const result = interpretTransaction({
+      signature,
+      cluster: "mainnet-beta",
+      status,
+      transaction: failedCustomTransfer(),
+      expectation: { recipient, amount: "0.5", mint: "SOL" },
+    });
+
+    expect(result.state).toBe("failed");
+    expect(result.failure).toMatchObject({
+      instructionIndex: 0,
+      programId: "11111111111111111111111111111111",
+      errorCode: "6016",
+      changesRolledBack: true,
+    });
+    expect(result.expectation.overall).toBe("mismatched");
+    expect(result.diagnosis.summary).toContain("Instruction 1");
+    expect(result.nativeTransfers).toHaveLength(1);
   });
 });

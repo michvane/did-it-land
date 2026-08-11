@@ -9,6 +9,7 @@ import { formatSol, formatUnits } from "./format";
 import type {
   ConfirmationState,
   Diagnosis,
+  FailureDetails,
   NativeBalanceChange,
   NativeTransfer,
   SolanaCluster,
@@ -189,14 +190,59 @@ function confirmationState(status: SignatureStatus | null): ConfirmationState {
   return status?.confirmationStatus ?? "unknown";
 }
 
-function failureDiagnosis(rawError: unknown, logs: string[]): Diagnosis {
+function instructionFailure(rawError: unknown): {
+  index?: number;
+  error?: unknown;
+} {
+  if (!rawError || typeof rawError !== "object" || !("InstructionError" in rawError)) return {};
+  const instructionError = (rawError as { InstructionError?: unknown }).InstructionError;
+  if (!Array.isArray(instructionError)) return {};
+  return {
+    index: typeof instructionError[0] === "number" ? instructionError[0] : undefined,
+    error: instructionError[1],
+  };
+}
+
+function failureDetails(
+  transaction: ParsedTransactionWithMeta,
+  rawError: unknown,
+  logs: string[],
+): FailureDetails {
+  const instruction = instructionFailure(rawError);
+  const topLevel = typeof instruction.index === "number"
+    ? transaction.transaction.message.instructions[instruction.index]
+    : undefined;
+  const failedLog = [...logs].reverse().find((log) => /^Program \S+ failed:/.test(log));
+  const logMatch = failedLog?.match(/^Program (\S+) failed: (.+)$/);
+  const customCode = instruction.error && typeof instruction.error === "object" && "Custom" in instruction.error
+    && typeof (instruction.error as { Custom?: unknown }).Custom === "number"
+    ? (instruction.error as { Custom: number }).Custom
+    : undefined;
+  const rawLabel = typeof instruction.error === "string"
+    ? instruction.error.replace(/([a-z])([A-Z])/g, "$1 $2")
+    : logMatch?.[2] ?? "The program rejected an instruction";
+
+  return {
+    instructionIndex: instruction.index,
+    programId: topLevel ? accountAddress(topLevel.programId) : logMatch?.[1],
+    errorCode: customCode?.toString(),
+    errorLabel: customCode !== undefined ? `Custom program error ${customCode}` : rawLabel,
+    changesRolledBack: true,
+  };
+}
+
+function failureDiagnosis(
+  rawError: unknown,
+  logs: string[],
+  failure: FailureDetails,
+): Diagnosis {
   const evidence = `${JSON.stringify(rawError)} ${logs.join(" ")}`.toLowerCase();
 
   if (evidence.includes("insufficient funds")) {
     return {
       code: "INSUFFICIENT_FUNDS",
       headline: "The transaction failed before completing",
-      summary: "The transaction did not have enough funds for the requested action or its fees. State changes were rolled back, although a network fee may still have been charged.",
+      summary: "The transaction did not have enough funds for the requested action. Its state changes were rolled back.",
       nextStep: "Check the fee payer's SOL balance and the amount available for the asset being sent, then rebuild the transaction.",
     };
   }
@@ -225,9 +271,11 @@ function failureDiagnosis(rawError: unknown, logs: string[]): Diagnosis {
 
   return {
     code: "TRANSACTION_FAILED",
-    headline: "The transaction failed on-chain",
-    summary: "Solana recorded the attempt, but at least one instruction returned an error. Program state changes were rolled back; a network fee may still have been charged.",
-    nextStep: "Review the failing program and logs below before retrying through the originating app.",
+    headline: "The transaction failed",
+    summary: failure.errorCode && failure.instructionIndex !== undefined
+      ? `Instruction ${failure.instructionIndex + 1} was rejected with custom program error ${failure.errorCode}. This program does not include a plain-English description in standard transaction data.`
+      : `${failure.errorLabel}. All attempted state changes were rolled back.`,
+    nextStep: "Retry through the original app or share the program and error details below with its support team.",
   };
 }
 
@@ -276,18 +324,19 @@ export function interpretTransaction(input: InterpretInput): TransactionAnalysis
 
   const transaction = input.transaction;
   const meta = transaction.meta;
-  const transfers = extractTransfers(transaction);
-  const tokenChanges = tokenBalanceChanges(transaction);
-  const expectation = evaluateExpectation(input.expectation, {
-    ...transfers,
-    tokenBalanceChanges: tokenChanges,
-  });
   const failed = Boolean(meta?.err ?? input.status?.err);
   const logs = meta?.logMessages ?? [];
+  const rawError = meta?.err ?? input.status?.err;
+  const transfers = extractTransfers(transaction);
+  const tokenChanges = tokenBalanceChanges(transaction);
+  const expectation = evaluateExpectation(input.expectation, failed
+    ? { nativeTransfers: [], tokenTransfers: [], tokenBalanceChanges: [] }
+    : { ...transfers, tokenBalanceChanges: tokenChanges });
+  const failure = failed ? failureDetails(transaction, rawError, logs) : undefined;
 
   let diagnosis: Diagnosis;
-  if (failed) {
-    diagnosis = failureDiagnosis(meta?.err ?? input.status?.err, logs);
+  if (failed && failure) {
+    diagnosis = failureDiagnosis(rawError, logs, failure);
   } else if (expectation.overall === "mismatched") {
     diagnosis = {
       code: "EXPECTATION_MISMATCH",
@@ -328,7 +377,8 @@ export function interpretTransaction(input: InterpretInput): TransactionAnalysis
     tokenBalanceChanges: tokenChanges,
     expectation,
     diagnosis,
-    rawError: meta?.err ?? input.status?.err ?? undefined,
+    failure,
+    rawError: rawError ?? undefined,
     logs,
     limitations: [
       "Balance changes can include account creation, rent, swaps, and multiple instructions—not only a single transfer.",
