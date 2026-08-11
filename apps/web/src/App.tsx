@@ -38,12 +38,10 @@ export default function App({ initialSignature, initialCluster }: AppProps) {
     <div className="page-shell">
       <header className="header">
         <a className="brand" href="/">Did it land?</a>
-        <span>Solana transaction verifier</span>
       </header>
 
       <main className="home">
         <section className="intro">
-          <p className="label">Transaction receipt</p>
           <h1>Know what happened.</h1>
           <p>Paste a Solana signature. Get a plain answer backed by on-chain data.</p>
         </section>
@@ -58,12 +56,6 @@ export default function App({ initialSignature, initialCluster }: AppProps) {
         {error && <p className="error" role="alert">{error}</p>}
         {analysis && <div id="result"><ResultView analysis={analysis} /></div>}
       </main>
-
-      <footer className="footer">
-        <span>Read-only</span>
-        <span>No wallet connection</span>
-        <span>Open source</span>
-      </footer>
     </div>
   );
 }

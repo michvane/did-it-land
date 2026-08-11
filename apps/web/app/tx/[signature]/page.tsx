@@ -31,7 +31,6 @@ export default async function ReportPage({ params, searchParams }: ReportPagePro
     <div className="page-shell">
       <header className="header">
         <Link className="brand" href="/">Did it land?</Link>
-        <span>Solana transaction receipt</span>
       </header>
       <main className="report-page">
         <Link className="back-link" href="/">← Check another transaction</Link>

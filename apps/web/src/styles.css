@@ -18,7 +18,7 @@ a { color: inherit; }
 code { font-family: "SFMono-Regular", Consolas, monospace; }
 
 .page-shell { width: min(760px, calc(100% - 40px)); min-height: 100vh; margin: 0 auto; display: flex; flex-direction: column; }
-.header { height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.header { height: 72px; display: flex; align-items: center; border-bottom: 1px solid var(--line); }
 .brand { color: #171717; font-size: 14px; font-weight: 700; letter-spacing: -.02em; text-decoration: none; }
 .home { flex: 1; padding: 110px 0 90px; }
 .intro { max-width: 580px; margin-bottom: 36px; }
@@ -85,13 +85,12 @@ code { font-family: "SFMono-Regular", Consolas, monospace; }
 .error-copy { max-width: 540px; margin: 18px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
 .error-actions { display: flex; gap: 8px; margin-top: 26px; }
 .error-actions button, .error-actions a { padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: #333; font-size: 11px; text-decoration: none; cursor: pointer; }
-.footer { min-height: 70px; display: flex; gap: 18px; align-items: center; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid #777; outline-offset: 2px; }
 #result { scroll-margin-top: 18px; }
 
 @media (max-width: 620px) {
   .page-shell { width: min(100% - 24px, 760px); }
-  .header { height: 60px; }.header > span { display: none; }
+  .header { height: 60px; }
   .home { padding: 72px 0 60px; }.intro { margin-bottom: 26px; }.intro h1 { font-size: 44px; }.intro > p:last-child { font-size: 14px; }
   .signature-row { grid-template-columns: 1fr auto; }.signature-control { grid-column: 1 / -1; }.signature-row select { grid-row: 2; grid-column: 1; height: 36px; border: 0; }.submit-button { grid-row: 2; grid-column: 2; height: 36px; }
   .form-extras { align-items: flex-start; flex-direction: column; gap: 0; }
@@ -99,5 +98,4 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .facts { grid-template-columns: 1fr; }.facts div { border-right: 0; border-bottom: 1px solid var(--line); }.facts div:last-child { border-bottom: 0; }
   .failure-facts { grid-template-columns: 1fr 1fr; }.failure-facts div:last-child { grid-column: 1 / -1; }
   .movement { grid-template-columns: 46px 1fr; padding: 8px 0; }.movement strong { grid-column: 2; }
-  .footer { flex-wrap: wrap; gap: 8px 14px; }
 }
