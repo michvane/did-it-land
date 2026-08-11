@@ -21,7 +21,9 @@ export function createSupportSummary(analysis: TransactionAnalysis): string {
     lines.push(`${analysis.state === "failed" ? "Fee charged" : "Network fee"}: ${analysis.feeLamports} lamports`);
   }
   if (analysis.failure) {
-    lines.push(`Failure: ${analysis.failure.errorLabel}`);
+    lines.push(`Failure: ${analysis.failure.resolution.title}`);
+    lines.push(`Explanation: ${analysis.failure.resolution.message}`);
+    lines.push(`Explanation source: ${analysis.failure.resolution.sourceLabel}`);
     if (analysis.failure.instructionIndex !== undefined) {
       lines.push(`Failed instruction: ${analysis.failure.instructionIndex + 1}`);
     }
@@ -37,8 +39,9 @@ export function createSupportSummary(analysis: TransactionAnalysis): string {
   }
 
   for (const transfer of analysis.tokenTransfers) {
+    const token = transfer.identity?.symbol ?? transfer.mint ?? "unknown mint";
     lines.push(
-      `${transferPrefix} token transfer${analysis.state === "failed" ? " (rolled back)" : ""}: ${transfer.amount ?? transfer.rawAmount} of ${transfer.mint ?? "unknown mint"} to ${shortAddress(transfer.destinationOwner ?? transfer.destinationTokenAccount)}`,
+      `${transferPrefix} token transfer${analysis.state === "failed" ? " (rolled back)" : ""}: ${transfer.amount ?? transfer.rawAmount} ${token} to ${shortAddress(transfer.destinationOwner ?? transfer.destinationTokenAccount)}`,
     );
   }
 

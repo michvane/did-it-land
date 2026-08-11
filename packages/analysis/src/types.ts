@@ -37,6 +37,13 @@ export interface TokenTransfer {
   rawAmount: string;
   decimals?: number;
   amount?: string;
+  identity?: TokenIdentity;
+}
+
+export interface TokenIdentity {
+  symbol: string;
+  name: string;
+  source: "curated_registry";
 }
 
 export interface NativeBalanceChange {
@@ -51,6 +58,7 @@ export interface TokenBalanceChange {
   rawAmount: string;
   decimals: number;
   amount: string;
+  identity?: TokenIdentity;
 }
 
 export type CheckState = "matched" | "mismatched" | "not_checked" | "unverifiable";
@@ -91,7 +99,16 @@ export interface FailureDetails {
   programId?: string;
   errorCode?: string;
   errorLabel: string;
+  resolution: FailureResolution;
   changesRolledBack: true;
+}
+
+export interface FailureResolution {
+  title: string;
+  message: string;
+  source: "program_logs" | "known_program" | "unknown";
+  sourceLabel: string;
+  referenceUrl?: string;
 }
 
 export interface TransactionAnalysis {

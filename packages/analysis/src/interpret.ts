@@ -6,6 +6,8 @@ import type {
 } from "@solana/web3.js";
 import { evaluateExpectation } from "./expectation";
 import { formatSol, formatUnits } from "./format";
+import { resolveProgramError } from "./program-errors";
+import { resolveTokenIdentity } from "./token-identity";
 import type {
   ConfirmationState,
   Diagnosis,
@@ -222,11 +224,16 @@ function failureDetails(
     ? instruction.error.replace(/([a-z])([A-Z])/g, "$1 $2")
     : logMatch?.[2] ?? "The program rejected an instruction";
 
+  const programId = topLevel ? accountAddress(topLevel.programId) : logMatch?.[1];
+  const errorCode = customCode?.toString();
+  const errorLabel = customCode !== undefined ? `Custom program error ${customCode}` : rawLabel;
+
   return {
     instructionIndex: instruction.index,
-    programId: topLevel ? accountAddress(topLevel.programId) : logMatch?.[1],
-    errorCode: customCode?.toString(),
-    errorLabel: customCode !== undefined ? `Custom program error ${customCode}` : rawLabel,
+    programId,
+    errorCode,
+    errorLabel,
+    resolution: resolveProgramError({ programId, errorCode, fallbackLabel: errorLabel, logs }),
     changesRolledBack: true,
   };
 }
@@ -247,7 +254,7 @@ function failureDiagnosis(
     };
   }
 
-  if (evidence.includes("slippage") || evidence.includes("0x1771")) {
+  if (evidence.includes("slippage")) {
     return {
       code: "SLIPPAGE_EXCEEDED",
       headline: "The swap price moved too far",
@@ -258,8 +265,7 @@ function failureDiagnosis(
 
   if (
     evidence.includes("computational budget exceeded") ||
-    /compute(?: unit| budget)[^.;]*exceeded/.test(evidence) ||
-    evidence.includes("program failed to complete")
+    /compute(?: unit| budget)[^.;]*exceeded/.test(evidence)
   ) {
     return {
       code: "COMPUTE_LIMIT_EXCEEDED",
@@ -272,9 +278,11 @@ function failureDiagnosis(
   return {
     code: "TRANSACTION_FAILED",
     headline: "The transaction failed",
-    summary: failure.errorCode && failure.instructionIndex !== undefined
-      ? `Instruction ${failure.instructionIndex + 1} was rejected with custom program error ${failure.errorCode}. This program does not include a plain-English description in standard transaction data.`
-      : `${failure.errorLabel}. All attempted state changes were rolled back.`,
+    summary: failure.resolution.source === "unknown" && failure.errorCode && failure.instructionIndex !== undefined
+      ? `The program rejected instruction ${failure.instructionIndex + 1} with error code ${failure.errorCode}. ${failure.resolution.message}`
+      : failure.instructionIndex !== undefined
+        ? `Instruction ${failure.instructionIndex + 1} failed: ${failure.resolution.message}`
+        : `${failure.resolution.message} All attempted state changes were rolled back.`,
     nextStep: "Retry through the original app or share the program and error details below with its support team.",
   };
 }
@@ -327,8 +335,18 @@ export function interpretTransaction(input: InterpretInput): TransactionAnalysis
   const failed = Boolean(meta?.err ?? input.status?.err);
   const logs = meta?.logMessages ?? [];
   const rawError = meta?.err ?? input.status?.err;
-  const transfers = extractTransfers(transaction);
-  const tokenChanges = tokenBalanceChanges(transaction);
+  const extractedTransfers = extractTransfers(transaction);
+  const transfers = {
+    nativeTransfers: extractedTransfers.nativeTransfers,
+    tokenTransfers: extractedTransfers.tokenTransfers.map((transfer) => ({
+      ...transfer,
+      identity: resolveTokenIdentity(transfer.mint, input.cluster),
+    })),
+  };
+  const tokenChanges = tokenBalanceChanges(transaction).map((change) => ({
+    ...change,
+    identity: resolveTokenIdentity(change.mint, input.cluster),
+  }));
   const expectation = evaluateExpectation(input.expectation, failed
     ? { nativeTransfers: [], tokenTransfers: [], tokenBalanceChanges: [] }
     : { ...transfers, tokenBalanceChanges: tokenChanges });

@@ -9,9 +9,9 @@ Did It Land? reads public chain data only. It never connects a wallet, requests 
 ## What it checks
 
 - Confirmation and execution status
-- Native SOL and parsed SPL token transfers
+- Native SOL and parsed SPL token transfers, with curated identities for common tokens
 - Network fee, fee payer, slot, and timestamp
-- Common failures such as insufficient funds and slippage
+- Program failures resolved from logs or published definitions, with the source shown
 - Optional recipient, amount, and asset expectations
 - A compact support report for sharing or copying
 
@@ -32,7 +32,7 @@ Next.js web app
           └── MCP server
 ```
 
-The shared TypeScript package owns signature normalization, transaction interpretation, exact amount comparisons, and diagnosis. The web UI and MCP server are adapters over that same result model.
+The shared TypeScript package owns signature normalization, transaction interpretation, token identity, exact amount comparisons, and sourced error diagnosis. The web UI and MCP server are adapters over that same result model.
 
 ## Run locally
 
@@ -76,7 +76,8 @@ npm run dev:mcp
 - Transfer detection focuses on native SOL and parsed SPL token instructions.
 - Complex program interactions may produce balance changes without a simple transfer row.
 - Results depend on the selected RPC provider retaining the transaction.
-- Token names, prices, and risk judgments are deliberately out of scope.
+- Unknown token names, prices, and risk judgments are deliberately out of scope.
+- A program-specific error remains unresolved when neither its logs nor a curated definition explain it.
 
 ## License
 

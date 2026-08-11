@@ -18,8 +18,10 @@ function MovementList({ analysis }: { analysis: TransactionAnalysis }) {
     })),
     ...analysis.tokenTransfers.map((transfer) => ({
       key: `token-${transfer.sourceTokenAccount}-${transfer.destinationTokenAccount}-${transfer.rawAmount}`,
-      asset: "Token",
-      title: transfer.mint ?? "Unknown token mint",
+      asset: transfer.identity?.symbol ?? "Token",
+      title: transfer.identity
+        ? `${transfer.identity.name} · ${transfer.mint}`
+        : transfer.mint ?? "Unknown token mint",
       route: `${shortAddress(transfer.sourceOwner ?? transfer.sourceTokenAccount)} → ${shortAddress(transfer.destinationOwner ?? transfer.destinationTokenAccount)}`,
       amount: transfer.amount ?? transfer.rawAmount,
     })),
@@ -87,9 +89,16 @@ export function ResultView({ analysis }: { analysis: TransactionAnalysis }) {
 
       {analysis.failure && (
         <div className="failure-panel">
-          <div className="section-title"><h3>Why it failed</h3><span>On-chain evidence</span></div>
+          <div className="section-title">
+            <h3>Why it failed</h3>
+            {analysis.failure.resolution.referenceUrl ? (
+              <a className="source-link" href={analysis.failure.resolution.referenceUrl} target="_blank" rel="noreferrer">
+                {analysis.failure.resolution.sourceLabel} ↗
+              </a>
+            ) : <span>{analysis.failure.resolution.sourceLabel}</span>}
+          </div>
           <dl className="failure-facts">
-            <div><dt>Reason</dt><dd>{analysis.failure.errorLabel}</dd></div>
+            <div><dt>Reason</dt><dd>{analysis.failure.resolution.title}</dd></div>
             {analysis.failure.instructionIndex !== undefined && (
               <div><dt>Instruction</dt><dd>{analysis.failure.instructionIndex + 1}</dd></div>
             )}

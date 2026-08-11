@@ -23,7 +23,7 @@ export function createDidItLandServer(analyzer: Analyzer = analyzeTransaction): 
     {
       title: "Verify a Solana transaction",
       description:
-        "Checks a Solana transaction signature and returns deterministic evidence about chain status, transfers, fees, errors, and optional expected recipient/amount/asset matches. Read-only: it never connects to a wallet or signs anything.",
+        "Checks a Solana transaction signature and returns deterministic evidence about chain status, transfers, token identities, fees, program errors, and optional expected recipient/amount/asset matches. Error explanations include their source. Read-only: it never connects to a wallet or signs anything.",
       inputSchema: {
         signature: z.string().describe("Solana transaction signature or explorer URL"),
         cluster: z

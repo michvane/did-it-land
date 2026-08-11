@@ -142,10 +142,14 @@ describe("transaction interpretation", () => {
       instructionIndex: 0,
       programId: "11111111111111111111111111111111",
       errorCode: "6016",
+      resolution: {
+        title: "Unknown program error 6016",
+        source: "unknown",
+      },
       changesRolledBack: true,
     });
     expect(result.expectation.overall).toBe("mismatched");
-    expect(result.diagnosis.summary).toContain("Instruction 1");
+    expect(result.diagnosis.summary).toContain("instruction 1 with error code 6016");
     expect(result.nativeTransfers).toHaveLength(1);
   });
 });
