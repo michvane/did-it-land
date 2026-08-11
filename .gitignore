@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vite/
+.next/
+coverage/
+.DS_Store
+*.log
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+
+# Local notes and working material
+.notes/
+private-docs/

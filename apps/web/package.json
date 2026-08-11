@@ -1,0 +1,22 @@
+{
+  "name": "@did-it-land/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --hostname 127.0.0.1 --port 5174",
+    "start": "next start --hostname 127.0.0.1 --port 5174",
+    "typecheck": "tsc --noEmit --pretty false"
+  },
+  "dependencies": {
+    "@did-it-land/analysis": "*",
+    "next": "^16.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0"
+  }
+}
