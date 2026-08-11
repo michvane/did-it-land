@@ -67,6 +67,10 @@ code { font-family: "SFMono-Regular", Consolas, monospace; }
 .technical-list dd { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: 9px; }
 .report-page { flex: 1; padding: 56px 0 80px; }.report-page .receipt { margin-top: 22px; }
 .back-link { color: var(--muted); font-size: 11px; text-decoration: none; }
+.error-title { max-width: 540px; margin: 0; font-size: clamp(32px, 6vw, 48px); font-weight: 560; letter-spacing: -.045em; }
+.error-copy { max-width: 540px; margin: 18px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.error-actions { display: flex; gap: 8px; margin-top: 26px; }
+.error-actions button, .error-actions a { padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: #333; font-size: 11px; text-decoration: none; cursor: pointer; }
 .footer { min-height: 70px; display: flex; gap: 18px; align-items: center; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
 
 @media (max-width: 620px) {
