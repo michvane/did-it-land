@@ -13,3 +13,4 @@ coverage/
 # Local notes and working material
 .notes/
 private-docs/
+.vercel

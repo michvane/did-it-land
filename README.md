@@ -4,6 +4,8 @@ A plain-language receipt for Solana transactions. Paste a signature to see wheth
 
 Did It Land? reads public chain data only. It never connects a wallet, requests a private key, or signs a transaction.
 
+**Live:** [did-it-land.vercel.app](https://did-it-land.vercel.app)
+
 ## What it checks
 
 - Confirmation and execution status
